@@ -1,50 +1,79 @@
-#include <iostream>
-#include <cstdlib>
+#include <bits/stdc++.h>
 using namespace std;
 
-int n;
-int x[20];          // x[row] = column of the queen in that row
 int solutions = 0;
 
-// Can a queen go at (row, col)? Check all queens placed in earlier rows.
-bool place(int row, int col) {
-    for (int prev = 0; prev < row; prev++) {
-        if (x[prev] == col) return false;                         // same column
-        if (abs(x[prev] - col) == abs(prev - row)) return false;  // same diagonal
+// Can a queen go at (row, col)? Only rows above are filled, so check upwards.
+bool isSafe(vector<string>& board, int row, int col, int n) {
+
+    // same column, above
+    for (int r = row - 1; r >= 0; r--) {
+        if (board[r][col] == 'Q') return false;
     }
+
+    // upper-left diagonal
+    int r = row - 1;
+    int c = col - 1;
+    while (r >= 0 && c >= 0) {
+        if (board[r][c] == 'Q') return false;
+        r--;
+        c--;
+    }
+
+    // upper-right diagonal
+    r = row - 1;
+    c = col + 1;
+    while (r >= 0 && c < n) {
+        if (board[r][c] == 'Q') return false;
+        r--;
+        c++;
+    }
+
     return true;
 }
 
-void printBoard() {
+void printBoard(vector<string>& board, int n) {
     for (int r = 0; r < n; r++) {
-        for (int c = 0; c < n; c++)
-            cout << (x[r] == c ? "Q " : ". ");
+        for (int c = 0; c < n; c++) {
+            cout << board[r][c] << " ";
+        }
         cout << endl;
     }
 }
 
-void nQueens(int row) {
-    if (row == n) {                 // all queens placed
+void solve(vector<string>& board, int row, int n) {
+    if (row == n) {
+        // all queens placed
         solutions++;
         if (solutions == 1) {
             cout << "First solution:" << endl;
-            printBoard();
+            printBoard(board, n);
         }
         return;
     }
+
     for (int col = 0; col < n; col++) {
-        if (place(row, col)) {
-            x[row] = col;           // place queen
-            nQueens(row + 1);       // go to next row
-        }                           // loop continues = BACKTRACK and try next col
+        if (isSafe(board, row, col, n)) {
+            board[row][col] = 'Q';          // place queen
+            solve(board, row + 1, n);       // go to next row
+            board[row][col] = '.';          // BACKTRACK: remove queen
+        }
     }
 }
 
 int main() {
+    int n;
     cout << "Enter number of queens: ";
     cin >> n;
-    nQueens(0);
-    if (solutions == 0) cout << "No solution" << endl;
-    else cout << "Total solutions = " << solutions << endl;
+
+    vector<string> board(n, string(n, '.'));
+    solve(board, 0, n);
+
+    if (solutions == 0) {
+        cout << "No solution" << endl;
+    }
+    else {
+        cout << "Total solutions = " << solutions << endl;
+    }
     return 0;
 }

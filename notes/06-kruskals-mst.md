@@ -11,11 +11,12 @@ Greedy: always the cheapest remaining edge overall.
 
 ## How do we detect a cycle? Union-Find (Disjoint Set)
 - Each vertex starts in its own group: `parent[i] = i`.
-- `find(x)` returns the **leader** (root) of x's group.
-- For edge u–v: if `find(u) == find(v)`, both are already connected, so adding the edge would make a **cycle** and we skip it.
-- Otherwise take the edge and **union** the groups: `parent[a] = b`.
+- `findParent(parent, x)` returns the **leader** (root) of x's group.
+- For edge u–v: if both ends have the same root (`rootU == rootV`), they are already connected, so adding the edge would make a **cycle** and we skip it.
+- Otherwise take the edge and **union** the groups: `parent[rootU] = rootV`.
+- Edges are stored as `{weight, u, v}`, so a plain `sort(edges.begin(), edges.end())` sorts them by weight.
 
-`return parent[x] = find(parent[x]);` is **path compression**: it makes later finds faster.
+If asked about speed-ups: **path compression** (point every node straight at its root while finding) and **union by rank** make union-find almost O(1) per operation. The simple version here is enough for the practical.
 
 ## Dry run (same graph as Prim's)
 Edges sorted: (0-1,2) (1-2,3) (1-4,5) (0-3,6) (2-4,7) (1-3,8) (3-4,9)
@@ -32,52 +33,62 @@ If we had continued: 2-4 (7) has both ends in the same group, so it would be a C
 File: [`cpp/06_kruskals.cpp`](../cpp/06_kruskals.cpp)
 
 ```cpp
-#include <iostream>
-#include <algorithm>
+#include <bits/stdc++.h>
 using namespace std;
 
-struct Edge {
-    int u, v, w;
-};
-
-bool cmp(Edge a, Edge b) {
-    return a.w < b.w;           // smallest weight first
-}
-
-int parent[100];
-
-// Find the "leader" (root) of the group that x belongs to
-int find(int x) {
+// Find the leader (root) of the group that x belongs to
+int findParent(vector<int>& parent, int x) {
     if (parent[x] == x) return x;
-    return parent[x] = find(parent[x]);
+
+    return findParent(parent, parent[x]);
 }
 
 int main() {
     int n, m;
-    Edge e[100];
-
     cout << "Enter number of vertices and edges: ";
     cin >> n >> m;
+
+    // each edge stored as {weight, u, v} so sort() sorts by weight
+    vector<vector<int>> edges;
     cout << "Enter each edge as: u v weight" << endl;
-    for (int i = 0; i < m; i++)
-        cin >> e[i].u >> e[i].v >> e[i].w;
-
-    sort(e, e + m, cmp);
-
-    for (int i = 0; i < n; i++) parent[i] = i;   // every vertex is its own group
-
-    int total = 0, taken = 0;
-    cout << "Edges in MST:" << endl;
-    for (int i = 0; i < m && taken < n - 1; i++) {
-        int a = find(e[i].u);
-        int b = find(e[i].v);
-        if (a != b) {                 // different groups -> no cycle
-            parent[a] = b;            // join the groups (union)
-            cout << e[i].u << " - " << e[i].v << " : " << e[i].w << endl;
-            total += e[i].w;
-            taken++;
-        }                             // same group -> would make a cycle, skip
+    for (int i = 0; i < m; i++) {
+        int u, v, w;
+        cin >> u >> v >> w;
+        edges.push_back({w, u, v});
     }
+
+    sort(edges.begin(), edges.end());
+
+    // every vertex starts as its own group
+    vector<int> parent(n);
+    for (int i = 0; i < n; i++) {
+        parent[i] = i;
+    }
+
+    int total = 0;
+    int taken = 0;
+    cout << "Edges in MST:" << endl;
+
+    for (int i = 0; i < m; i++) {
+        if (taken == n - 1) break;
+
+        int w = edges[i][0];
+        int u = edges[i][1];
+        int v = edges[i][2];
+
+        int rootU = findParent(parent, u);
+        int rootV = findParent(parent, v);
+
+        if (rootU != rootV) {
+            // different groups -> no cycle, take this edge
+            parent[rootU] = rootV;      // join the two groups
+            cout << u << " - " << v << " : " << w << endl;
+            total = total + w;
+            taken++;
+        }
+        // same group -> this edge would make a cycle, skip it
+    }
+
     cout << "Total cost of MST = " << total << endl;
     return 0;
 }

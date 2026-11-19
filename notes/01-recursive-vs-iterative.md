@@ -27,21 +27,24 @@ Each pending call sits on the **call stack** until the base case returns. That's
 File: [`cpp/01_factorial.cpp`](../cpp/01_factorial.cpp)
 
 ```cpp
-#include <iostream>
+#include <bits/stdc++.h>
 using namespace std;
 
 // Recursive: the function calls itself
 long long factRec(int n) {
-    if (n <= 1) return 1;          // base case: stop here
-    return n * factRec(n - 1);     // recursive case
+    if (n <= 1) return 1;          // base case
+
+    return n * factRec(n - 1);     // recursive call on smaller n
 }
 
-// Non-recursive (iterative): uses a loop
+// Non-recursive: a simple loop
 long long factLoop(int n) {
-    long long ans = 1;
-    for (int i = 2; i <= n; i++)
-        ans = ans * i;
-    return ans;
+    long long result = 1;
+
+    for (int i = 2; i <= n; i++) {
+        result = result * i;
+    }
+    return result;
 }
 
 int main() {
@@ -50,7 +53,7 @@ int main() {
     cin >> n;
 
     if (n < 0) {
-        cout << "Factorial is not defined for negative numbers\n";
+        cout << "Factorial is not defined for negative numbers" << endl;
         return 0;
     }
 

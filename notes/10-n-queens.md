@@ -11,14 +11,17 @@ Place **8 queens** on an 8×8 chessboard so that **no two attack each other**: n
 Build the solution step by step. If you get stuck, **undo the last choice and try the next option**.
 
 - Put exactly **one queen per row** (so rows never clash).
-- `x[row] = col` stores which column the queen in that row is in.
-- For row `r`, try columns 0..n−1. If the column is safe, place the queen and go to row `r+1`.
-- If no column works, return. The previous row then tries its next column. **That's the backtrack.**
+- The board is a `vector<string>`, every cell starts as `'.'`, and a queen is `'Q'`.
+- For row `row`, try every column. If it's safe, put `'Q'`, solve the next row, then put `'.'` back. **Putting `'.'` back is the backtrack.**
+- If no column works, the function just returns, and the previous row tries its next column.
 
 ## The safety check
-Queen at (row, col) clashes with an earlier queen at (prev, x[prev]) if:
-- **same column**: `x[prev] == col`
-- **same diagonal**: `|x[prev] − col| == |prev − row|` (equal row and column distance means they're on a diagonal)
+Rows below are still empty, so `isSafe` only looks **upwards** from (row, col) in 3 directions:
+- **straight up**: same column
+- **up-left**: `row-1, col-1`, then `row-2, col-2`, ...
+- **up-right**: `row-1, col+1`, then `row-2, col+2`, ...
+
+If any of these cells has a `'Q'`, the spot is not safe. No need to check the same row, because we place only one queen per row.
 
 ## Dry run with 4 queens (smaller and easier to show)
 ```
@@ -39,54 +42,83 @@ Row 3: col 2       . . Q .   <- SOLUTION
 File: [`cpp/10_n_queens.cpp`](../cpp/10_n_queens.cpp)
 
 ```cpp
-#include <iostream>
-#include <cstdlib>
+#include <bits/stdc++.h>
 using namespace std;
 
-int n;
-int x[20];          // x[row] = column of the queen in that row
 int solutions = 0;
 
-// Can a queen go at (row, col)? Check all queens placed in earlier rows.
-bool place(int row, int col) {
-    for (int prev = 0; prev < row; prev++) {
-        if (x[prev] == col) return false;                         // same column
-        if (abs(x[prev] - col) == abs(prev - row)) return false;  // same diagonal
+// Can a queen go at (row, col)? Only rows above are filled, so check upwards.
+bool isSafe(vector<string>& board, int row, int col, int n) {
+
+    // same column, above
+    for (int r = row - 1; r >= 0; r--) {
+        if (board[r][col] == 'Q') return false;
     }
+
+    // upper-left diagonal
+    int r = row - 1;
+    int c = col - 1;
+    while (r >= 0 && c >= 0) {
+        if (board[r][c] == 'Q') return false;
+        r--;
+        c--;
+    }
+
+    // upper-right diagonal
+    r = row - 1;
+    c = col + 1;
+    while (r >= 0 && c < n) {
+        if (board[r][c] == 'Q') return false;
+        r--;
+        c++;
+    }
+
     return true;
 }
 
-void printBoard() {
+void printBoard(vector<string>& board, int n) {
     for (int r = 0; r < n; r++) {
-        for (int c = 0; c < n; c++)
-            cout << (x[r] == c ? "Q " : ". ");
+        for (int c = 0; c < n; c++) {
+            cout << board[r][c] << " ";
+        }
         cout << endl;
     }
 }
 
-void nQueens(int row) {
-    if (row == n) {                 // all queens placed
+void solve(vector<string>& board, int row, int n) {
+    if (row == n) {
+        // all queens placed
         solutions++;
         if (solutions == 1) {
             cout << "First solution:" << endl;
-            printBoard();
+            printBoard(board, n);
         }
         return;
     }
+
     for (int col = 0; col < n; col++) {
-        if (place(row, col)) {
-            x[row] = col;           // place queen
-            nQueens(row + 1);       // go to next row
-        }                           // loop continues = BACKTRACK and try next col
+        if (isSafe(board, row, col, n)) {
+            board[row][col] = 'Q';          // place queen
+            solve(board, row + 1, n);       // go to next row
+            board[row][col] = '.';          // BACKTRACK: remove queen
+        }
     }
 }
 
 int main() {
+    int n;
     cout << "Enter number of queens: ";
     cin >> n;
-    nQueens(0);
-    if (solutions == 0) cout << "No solution" << endl;
-    else cout << "Total solutions = " << solutions << endl;
+
+    vector<string> board(n, string(n, '.'));
+    solve(board, 0, n);
+
+    if (solutions == 0) {
+        cout << "No solution" << endl;
+    }
+    else {
+        cout << "Total solutions = " << solutions << endl;
+    }
     return 0;
 }
 ```
@@ -108,12 +140,12 @@ Total solutions = 92
 
 ## Complexity
 - Worst case **O(n!)**: row 0 has n choices, row 1 fewer, and so on. Backtracking prunes most branches early.
-- Space: **O(n)** for `x[]` and the recursion depth.
+- Space: **O(n²)** for the board, plus O(n) recursion depth.
 
 ## Viva questions
 - **What is backtracking?** Try a choice. If it leads to a dead end, undo it and try the next one. It's DFS on the state-space tree with pruning.
 - **What is the state-space tree?** The tree of all partial placements. The root is an empty board, and level k means k queens are placed.
-- **Bounding function?** The `place()` check. It kills branches that can't lead to a solution.
+- **Bounding function?** The `isSafe()` check. It kills branches that can't lead to a solution.
 - **Why one queen per row?** It removes row clashes automatically and shrinks the search space.
 - **Solutions for n = 1, 2, 3, 4, 8?** 1, 0, 0, 2, 92.
 - **Other backtracking problems:** sum of subsets, graph coloring, Hamiltonian cycle, sudoku.
@@ -131,30 +163,41 @@ else:          dp[i][w] = max(dp[i-1][w], val[i] + dp[i-1][w-wt[i]])  (skip vs t
 File: [`cpp/10b_knapsack_01.cpp`](../cpp/10b_knapsack_01.cpp)
 
 ```cpp
-#include <iostream>
+#include <bits/stdc++.h>
 using namespace std;
 
-// 0/1 knapsack with dynamic programming (take an item fully or not at all)
+// 0/1 knapsack: take an item fully or not at all (dynamic programming)
 int main() {
-    int n, W, val[50], wt[50], dp[50][1001];
+    int n;
     cout << "Enter number of items: ";
     cin >> n;
-    for (int i = 1; i <= n; i++) {
-        cout << "Enter value and weight of item " << i << ": ";
-        cin >> val[i] >> wt[i];
+
+    vector<int> value(n), weight(n);
+    for (int i = 0; i < n; i++) {
+        cout << "Enter value and weight of item " << i + 1 << ": ";
+        cin >> value[i] >> weight[i];
     }
+
+    int W;
     cout << "Enter capacity: ";
     cin >> W;
 
-    // dp[i][w] = best profit using first i items with capacity w
-    for (int i = 0; i <= n; i++) {
+    // dp[i][w] = best profit using the first i items with capacity w
+    vector<vector<int>> dp(n + 1, vector<int>(W + 1, 0));
+
+    for (int i = 1; i <= n; i++) {
         for (int w = 0; w <= W; w++) {
-            if (i == 0 || w == 0) dp[i][w] = 0;
-            else if (wt[i] > w) dp[i][w] = dp[i - 1][w];            // can't take
-            else dp[i][w] = max(dp[i - 1][w],                        // skip it
-                                val[i] + dp[i - 1][w - wt[i]]);      // take it
+            int notTake = dp[i - 1][w];
+
+            int take = 0;
+            if (weight[i - 1] <= w) {
+                take = value[i - 1] + dp[i - 1][w - weight[i - 1]];
+            }
+
+            dp[i][w] = max(take, notTake);
         }
     }
+
     cout << "Maximum profit = " << dp[n][W] << endl;
     return 0;
 }

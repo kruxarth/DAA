@@ -11,7 +11,7 @@ Start with the direct edge costs. Then for every vertex **k**, ask:
 If yes, update it. After trying every k as a "middle stop", all distances are shortest.
 
 ```
-d[i][j] = min( d[i][j],  d[i][k] + d[k][j] )
+dist[i][j] = min( dist[i][j],  dist[i][k] + dist[k][j] )
 ```
 The **k loop must be outermost**. That's the most common viva trick question.
 
@@ -42,32 +42,45 @@ For example 0→3 went from 7 (direct) to 6 (0→1→2→3 = 3+2+1).
 File: [`cpp/08_floyd_warshall.cpp`](../cpp/08_floyd_warshall.cpp)
 
 ```cpp
-#include <iostream>
+#include <bits/stdc++.h>
 using namespace std;
 
 const int INF = 999;    // 999 means "no direct edge"
 
 int main() {
-    int n, d[20][20];
+    int n;
     cout << "Enter number of vertices: ";
     cin >> n;
-    cout << "Enter cost matrix (999 = no edge):" << endl;
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            cin >> d[i][j];
 
-    // Try every vertex k as a "middle stop" between i and j
-    for (int k = 0; k < n; k++)
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++)
-                if (d[i][k] + d[k][j] < d[i][j])
-                    d[i][j] = d[i][k] + d[k][j];
+    vector<vector<int>> dist(n, vector<int>(n));
+    cout << "Enter cost matrix (999 = no edge):" << endl;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            cin >> dist[i][j];
+        }
+    }
+
+    // try every vertex k as a middle stop between i and j
+    for (int k = 0; k < n; k++) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                int viaK = dist[i][k] + dist[k][j];
+                if (viaK < dist[i][j]) {
+                    dist[i][j] = viaK;
+                }
+            }
+        }
+    }
 
     cout << "All-pairs shortest distances:" << endl;
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            if (d[i][j] >= INF) cout << "INF\t";
-            else cout << d[i][j] << "\t";
+            if (dist[i][j] >= INF) {
+                cout << "INF\t";
+            }
+            else {
+                cout << dist[i][j] << "\t";
+            }
         }
         cout << endl;
     }
@@ -97,6 +110,6 @@ Note: 999 works as "infinity" only if real path costs stay below 999. For bigger
 
 ## Viva questions
 - **Why is k the outer loop?** Dᵏ needs all of Dᵏ⁻¹ to be finished first. With k inside, you'd use incomplete results.
-- **Negative edges?** Allowed. **Negative cycles?** Not allowed. You can detect one if any `d[i][i] < 0` after the run.
+- **Negative edges?** Allowed. **Negative cycles?** Not allowed. You can detect one if any `dist[i][i] < 0` after the run.
 - **Floyd vs running Dijkstra from every vertex?** Floyd is O(V³) and simpler. V × Dijkstra is O(V·E log V), which is better for sparse graphs, but Dijkstra can't handle negative edges.
 - **Which technique?** Dynamic programming.

@@ -55,40 +55,36 @@ Fixed-length codes would need 3 bits × 100 = 300 bits. **Huffman saves about 25
 File: [`cpp/09_huffman.cpp`](../cpp/09_huffman.cpp)
 
 ```cpp
-#include <iostream>
-#include <queue>
-#include <string>
+#include <bits/stdc++.h>
 using namespace std;
 
 struct Node {
     char ch;
     int freq;
-    Node *left, *right;
+    Node* left;
+    Node* right;
 };
 
-Node* newNode(char ch, int freq, Node* l, Node* r) {
-    Node* t = new Node;
-    t->ch = ch;
-    t->freq = freq;
-    t->left = l;
-    t->right = r;
-    return t;
+Node* makeNode(char ch, int freq, Node* left, Node* right) {
+    Node* node = new Node();
+    node->ch = ch;
+    node->freq = freq;
+    node->left = left;
+    node->right = right;
+    return node;
 }
 
-// Makes priority_queue give the SMALLEST frequency first
-struct Compare {
-    bool operator()(Node* a, Node* b) {
-        return a->freq > b->freq;
-    }
-};
-
-// Walk the tree: left adds '0', right adds '1'
+// left adds '0', right adds '1'
 void printCodes(Node* root, string code) {
     if (root == NULL) return;
-    if (root->left == NULL && root->right == NULL) {   // leaf = a character
-        cout << root->ch << " : " << (code == "" ? "0" : code) << endl;
+
+    // leaf node = an actual character
+    if (root->left == NULL && root->right == NULL) {
+        if (code == "") code = "0";      // only one character in input
+        cout << root->ch << " : " << code << endl;
         return;
     }
+
     printCodes(root->left, code + "0");
     printCodes(root->right, code + "1");
 }
@@ -98,24 +94,33 @@ int main() {
     cout << "Enter number of characters: ";
     cin >> n;
 
-    priority_queue<Node*, vector<Node*>, Compare> pq;
+    // min-heap of {frequency, node}: smallest frequency on top
+    priority_queue<pair<int, Node*>, vector<pair<int, Node*>>, greater<pair<int, Node*>>> pq;
+
     for (int i = 0; i < n; i++) {
         char ch;
-        int f;
+        int freq;
         cout << "Enter character and frequency: ";
-        cin >> ch >> f;
-        pq.push(newNode(ch, f, NULL, NULL));
+        cin >> ch >> freq;
+        pq.push({freq, makeNode(ch, freq, NULL, NULL)});
     }
 
-    // Keep joining the two smallest until one tree is left
+    // keep joining the two smallest until one tree is left
     while (pq.size() > 1) {
-        Node* a = pq.top(); pq.pop();
-        Node* b = pq.top(); pq.pop();
-        pq.push(newNode('$', a->freq + b->freq, a, b));   // '$' = internal node
+        Node* first = pq.top().second;
+        pq.pop();
+        Node* second = pq.top().second;
+        pq.pop();
+
+        int sum = first->freq + second->freq;
+        Node* parent = makeNode('$', sum, first, second);    // '$' = internal node
+        pq.push({sum, parent});
     }
+
+    Node* root = pq.top().second;
 
     cout << "Huffman codes:" << endl;
-    printCodes(pq.top(), "");
+    printCodes(root, "");
     return 0;
 }
 ```

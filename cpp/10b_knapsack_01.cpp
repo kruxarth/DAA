@@ -1,27 +1,38 @@
-#include <iostream>
+#include <bits/stdc++.h>
 using namespace std;
 
-// 0/1 knapsack with dynamic programming (take an item fully or not at all)
+// 0/1 knapsack: take an item fully or not at all (dynamic programming)
 int main() {
-    int n, W, val[50], wt[50], dp[50][1001];
+    int n;
     cout << "Enter number of items: ";
     cin >> n;
-    for (int i = 1; i <= n; i++) {
-        cout << "Enter value and weight of item " << i << ": ";
-        cin >> val[i] >> wt[i];
+
+    vector<int> value(n), weight(n);
+    for (int i = 0; i < n; i++) {
+        cout << "Enter value and weight of item " << i + 1 << ": ";
+        cin >> value[i] >> weight[i];
     }
+
+    int W;
     cout << "Enter capacity: ";
     cin >> W;
 
-    // dp[i][w] = best profit using first i items with capacity w
-    for (int i = 0; i <= n; i++) {
+    // dp[i][w] = best profit using the first i items with capacity w
+    vector<vector<int>> dp(n + 1, vector<int>(W + 1, 0));
+
+    for (int i = 1; i <= n; i++) {
         for (int w = 0; w <= W; w++) {
-            if (i == 0 || w == 0) dp[i][w] = 0;
-            else if (wt[i] > w) dp[i][w] = dp[i - 1][w];            // can't take
-            else dp[i][w] = max(dp[i - 1][w],                        // skip it
-                                val[i] + dp[i - 1][w - wt[i]]);      // take it
+            int notTake = dp[i - 1][w];
+
+            int take = 0;
+            if (weight[i - 1] <= w) {
+                take = value[i - 1] + dp[i - 1][w - weight[i - 1]];
+            }
+
+            dp[i][w] = max(take, notTake);
         }
     }
+
     cout << "Maximum profit = " << dp[n][W] << endl;
     return 0;
 }
